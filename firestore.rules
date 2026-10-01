@@ -14,15 +14,10 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Settings Collection (School Info)
     match /settings/{settingId} {
       allow read: if true;
-      allow create, update, delete: if isValidId(settingId);
+      allow write: if isValidId(settingId);
     }
 
     // Students
