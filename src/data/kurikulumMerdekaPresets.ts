@@ -2022,7 +2022,7 @@ export const CURRICULUM_PHASE_PRESETS: Record<CurriculumPhaseKey, CurriculumPhas
 };
 
 /**
- * Helper to generate balanced, authentic GradeRecords for any list of students, subjects, and TPs.
+ * Helper to generate standard GradeRecords for any list of students, subjects, and TPs (Standar: nilai setiap TP adalah 0).
  */
 export function generateGradesForCurriculumPhase(
   students: Student[],
@@ -2030,15 +2030,9 @@ export function generateGradesForCurriculumPhase(
   _tps?: TujuanPembelajaran[]
 ): GradeRecord[] {
   const grades: GradeRecord[] = [];
-  const baseScoresByAbsen = [88, 92, 82, 90, 80, 86, 88, 84, 86, 95, 85, 90, 87, 89, 91, 83];
 
-  students.forEach((student, sIdx) => {
-    const studentBase = baseScoresByAbsen[sIdx % baseScoresByAbsen.length] || 84;
-
-    subjects.forEach((subject, subIdx) => {
-      const subOffset = ((subIdx * 3 + student.nomorAbsen) % 7) - 3;
-      const targetBase = Math.min(98, Math.max(68, studentBase + subOffset));
-
+  students.forEach((student) => {
+    subjects.forEach((subject) => {
       const types: AssessmentType[] = [
         'Formatif_TP1',
         'Formatif_TP2',
@@ -2048,21 +2042,14 @@ export function generateGradesForCurriculumPhase(
         'Sumatif_SAS'
       ];
 
-      types.forEach((type, tIdx) => {
-        const typeOffset = ((tIdx * 2 + student.nomorAbsen) % 5) - 2;
-        const score = Math.min(100, Math.max(60, targetBase + typeOffset));
-
+      types.forEach((type) => {
         grades.push({
           id: `grd-${student.id}-${subject.id}-${type}`,
           siswaId: student.id,
           mapelId: subject.id,
           jenis: type,
-          nilai: score,
-          capaianKompetensi: score >= (subject.kktp || 75) + 10
-            ? 'Menunjukkan penguasaan sangat baik dalam mencapai tujuan pembelajaran.'
-            : score >= (subject.kktp || 75)
-            ? 'Menunjukkan penguasaan yang baik dalam mencapai tujuan pembelajaran.'
-            : 'Perlu bimbingan dan pendampingan intensif pada penguasaan konsep dasar.'
+          nilai: 0,
+          capaianKompetensi: 'Perlu bimbingan dan pendampingan intensif pada penguasaan konsep dasar.'
         });
       });
     });

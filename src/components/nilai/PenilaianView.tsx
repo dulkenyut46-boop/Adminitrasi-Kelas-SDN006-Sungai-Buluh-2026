@@ -9,6 +9,7 @@ import {
   AGAMA_DETAILS
 } from '../../utils/agamaHelper';
 import { Modal } from '../common/Modal';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { HeaderKopSekolah } from '../common/HeaderKopSekolah';
 import { BadgeStatus } from '../common/BadgeStatus';
 import { MataPelajaranDanTPSection } from './MataPelajaranDanTPSection';
@@ -39,7 +40,8 @@ import {
   HelpCircle,
   Zap,
   Check,
-  Target
+  Target,
+  RotateCcw
 } from 'lucide-react';
 
 export const PenilaianView: React.FC = () => {
@@ -59,7 +61,8 @@ export const PenilaianView: React.FC = () => {
     schoolInfo,
     currentUser,
     setCurrentTab,
-    addToast
+    addToast,
+    resetAllTPGradesToZero
   } = useApp();
 
   const safeSubjects = subjects || [];
@@ -74,6 +77,7 @@ export const PenilaianView: React.FC = () => {
   const [semesterFilter, setSemesterFilter] = useState<'Semua' | '1 (Ganjil)' | '2 (Genap)'>('Semua');
   const [isPrintLegerOpen, setIsPrintLegerOpen] = useState(false);
   const [isTPInfoExpanded, setIsTPInfoExpanded] = useState(true);
+  const [isResetAllModalOpen, setIsResetAllModalOpen] = useState(false);
 
   // Quick TP Modal States
   const [isQuickAddTPModalOpen, setIsQuickAddTPModalOpen] = useState(false);
@@ -133,8 +137,8 @@ export const PenilaianView: React.FC = () => {
     });
   }, [safeTPs, currentSubject?.id, semesterFilter, isAgama, filterAgama]);
 
-  // Helper to get grade record for specific student, mapel, and assessment/TP index
-  const getGradeValue = (siswaId: string, mapelId: string, assessmentKey: string, defaultVal = 80): number => {
+  // Helper to get grade record for specific student, mapel, and assessment/TP index (Standar 0)
+  const getGradeValue = (siswaId: string, mapelId: string, assessmentKey: string, defaultVal = 0): number => {
     const rec = safeGrades.find(g => 
       g.siswaId === siswaId && 
       g.mapelId === mapelId && 
@@ -708,6 +712,15 @@ export const PenilaianView: React.FC = () => {
                     <span className="text-[10.5px] font-bold text-slate-500 px-2">Isi Massal:</span>
                     <button
                       type="button"
+                      onClick={() => handleBatchFillScores(0)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/40 shadow-2xs cursor-pointer flex items-center gap-1"
+                      title="Ubah nilai TP anak di mapel ini menjadi angka 0 semua (Standar awal)"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      <span>Standar 0</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleBatchFillScores(currentSubject.kktp || 75)}
                       className="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:text-blue-600 text-slate-700 dark:text-slate-200 shadow-2xs cursor-pointer"
                       title="Isi seluruh nilai dengan ambang KKTP"
@@ -721,6 +734,14 @@ export const PenilaianView: React.FC = () => {
                       title="Isi seluruh nilai dengan 85 (Baik)"
                     >
                       Nilai 85
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsResetAllModalOpen(true)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/40 shadow-2xs cursor-pointer ml-1"
+                      title="Ubah seluruh nilai TP anak di semua mata pelajaran menjadi angka 0"
+                    >
+                      Reset Semua TP ke 0
                     </button>
                   </div>
                 )}
@@ -803,8 +824,8 @@ export const PenilaianView: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {filteredStudents.map(student => {
-                      const sts = getGradeValue(student.id, selectedSubjectId, 'Sumatif_STS', 80);
-                      const sas = getGradeValue(student.id, selectedSubjectId, 'Sumatif_SAS', 80);
+                      const sts = getGradeValue(student.id, selectedSubjectId, 'Sumatif_STS', 0);
+                      const sas = getGradeValue(student.id, selectedSubjectId, 'Sumatif_SAS', 0);
                       const summary = getStudentGradeSummary(student.id, selectedSubjectId);
 
                       return (
@@ -844,7 +865,7 @@ export const PenilaianView: React.FC = () => {
                           {currentSubjectTPs.length > 0 ? (
                             currentSubjectTPs.map((tp, idx) => {
                               const assessmentKey: AssessmentType = `Formatif_TP${idx + 1}` as AssessmentType;
-                              const scoreVal = getGradeValue(student.id, selectedSubjectId, assessmentKey, 80);
+                              const scoreVal = getGradeValue(student.id, selectedSubjectId, assessmentKey, 0);
 
                               return (
                                 <td
@@ -1154,6 +1175,22 @@ export const PenilaianView: React.FC = () => {
           isOpen={isPrintLegerOpen}
           onClose={() => setIsPrintLegerOpen(false)}
           defaultMode="matrix"
+        />
+      )}
+
+      {/* Konfirmasi Reset Semua Nilai TP ke 0 */}
+      {isResetAllModalOpen && (
+        <ConfirmDialog
+          isOpen={true}
+          onClose={() => setIsResetAllModalOpen(false)}
+          onConfirm={() => {
+            resetAllTPGradesToZero();
+            setIsResetAllModalOpen(false);
+          }}
+          title="Atur Seluruh Nilai TP ke Angka 0?"
+          message="Apakah Anda yakin ingin mengatur seluruh nilai Tujuan Pembelajaran (TP) anak di SEMUA mata pelajaran menjadi angka 0? Tindakan ini menetapkan nilai standar awal untuk memulai proses asesmen baru."
+          confirmText="Ya, Set ke 0 Semua"
+          cancelText="Batal"
         />
       )}
     </div>

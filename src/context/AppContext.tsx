@@ -188,6 +188,7 @@ interface AppContextType {
   saveGrade: (siswaId: string, mapelId: string, jenis: AssessmentType, nilai: number, capaianKompetensi?: string) => void;
   bulkSaveGrades: (newGrades: Array<{ siswaId: string; mapelId: string; jenis: AssessmentType; nilai: number; capaianKompetensi?: string }>) => void;
   bulkImportGrades: (newGrades: GradeRecord[], mode?: 'append' | 'replace') => void;
+  resetAllTPGradesToZero: (mapelId?: string) => void;
   getStudentGradeSummary: (siswaId: string, mapelId: string) => {
     formatifAvg: number;
     sumatifSts: number;
@@ -539,9 +540,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved;
   });
 
-  const [grades, setGrades] = useState<GradeRecord[]>(() => 
-    getSaved('grades', generateInitialGrades())
-  );
+  const [grades, setGrades] = useState<GradeRecord[]>(() => {
+    const saved = getSaved('grades', null);
+    const standardZeroApplied = getSaved('grades_standard_zero_v1', false);
+    if (!saved || !Array.isArray(saved) || !standardZeroApplied) {
+      // Standard: change children's scores in every TP to number 0
+      const initial = generateInitialGrades();
+      localStorage.setItem(STORAGE_PREFIX + 'grades', JSON.stringify(initial));
+      localStorage.setItem(STORAGE_PREFIX + 'grades_standard_zero_v1', 'true');
+      return initial;
+    }
+    return saved;
+  });
 
   const [studentReports, setStudentReports] = useState<Record<string, StudentReportData>>(() => 
     getSaved('studentReports', generateInitialStudentReports())
@@ -1962,6 +1972,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
+  const resetAllTPGradesToZero = (mapelId?: string) => {
+    setGrades(prev => {
+      const updated = (prev || []).map(g => {
+        if (mapelId && g.mapelId !== mapelId) return g;
+        if (g.jenis.startsWith('Formatif_')) {
+          return { ...g, nilai: 0 };
+        }
+        return g;
+      });
+      localStorage.setItem(STORAGE_PREFIX + 'grades', JSON.stringify(updated));
+      return updated;
+    });
+
+    addToast(
+      'success',
+      'Nilai TP Diatur ke 0',
+      mapelId
+        ? 'Seluruh nilai TP peserta didik pada mata pelajaran ini berhasil diatur menjadi angka 0.'
+        : 'Seluruh nilai TP peserta didik di semua mata pelajaran berhasil diatur menjadi angka 0.'
+    );
+  };
+
   const getStudentGradeSummary = (siswaId: string, mapelId: string) => {
     const student = (students || []).find(s => s.id === siswaId);
     const studentAgama = student?.agama || 'Islam';
@@ -3310,6 +3342,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         saveGrade,
         bulkSaveGrades,
         bulkImportGrades,
+        resetAllTPGradesToZero,
         getStudentGradeSummary,
         getAllGradesForStudent,
         getAllMidSemesterGradesForStudent,

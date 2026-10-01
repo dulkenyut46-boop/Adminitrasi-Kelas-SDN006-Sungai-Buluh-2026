@@ -1358,31 +1358,12 @@ export const INITIAL_TUJUAN_PEMBELAJARAN: TujuanPembelajaran[] = [
   }
 ];
 
-// Helper to generate realistic initial grades
+// Helper to generate realistic initial grades (Standar: nilai anak di setiap TP adalah 0)
 export const generateInitialGrades = (): GradeRecord[] => {
   const grades: GradeRecord[] = [];
-  const baseScores: Record<string, number[]> = {
-    'sis-01': [88, 90, 86, 92, 88, 90], // Ahmad Fauzi
-    'sis-02': [92, 95, 84, 88, 90, 92], // Aisyah
-    'sis-03': [82, 85, 96, 90, 85, 88], // Budi
-    'sis-04': [90, 92, 88, 86, 90, 91], // Citra
-    'sis-05': [80, 82, 78, 82, 84, 85], // Dimas
-    'sis-06': [86, 88, 94, 96, 88, 92], // Farhan
-    'sis-07': [88, 90, 88, 85, 90, 89], // Gita
-    'sis-08': [84, 86, 82, 86, 85, 88], // Made
-    'sis-09': [86, 88, 92, 90, 88, 91], // Kevin
-    'sis-10': [95, 96, 98, 96, 98, 97], // Nadia
-    'sis-11': [85, 88, 80, 82, 86, 85], // Rizky
-    'sis-12': [90, 92, 84, 88, 88, 90], // Tiara
-  };
 
   INITIAL_STUDENTS.forEach((student) => {
-    const scores = baseScores[student.id] || [85, 85, 85, 85, 85, 85];
-    INITIAL_SUBJECTS.forEach((subject, subIdx) => {
-      const base = scores[subIdx % scores.length] || 82;
-      const variation = ((student.nomorAbsen + subIdx) % 7) - 3;
-      const finalVal = Math.min(100, Math.max(65, base + variation));
-
+    INITIAL_SUBJECTS.forEach((subject) => {
       const types: AssessmentType[] = [
         'Formatif_TP1',
         'Formatif_TP2',
@@ -1392,20 +1373,14 @@ export const generateInitialGrades = (): GradeRecord[] => {
         'Sumatif_SAS'
       ];
 
-      types.forEach((type, tIdx) => {
-        const offset = ((tIdx * 2 + student.nomorAbsen) % 5) - 2;
-        const score = Math.min(100, Math.max(60, finalVal + offset));
+      types.forEach((type) => {
         grades.push({
           id: `grd-${student.id}-${subject.id}-${type}`,
           siswaId: student.id,
           mapelId: subject.id,
           jenis: type,
-          nilai: score,
-          capaianKompetensi: score >= 85 
-            ? 'Menunjukkan penguasaan yang sangat baik dalam memahami materi dan menerapkan konsep.'
-            : score >= 75
-            ? 'Menunjukkan penguasaan yang baik dalam mencapai tujuan pembelajaran.'
-            : 'Perlu bimbingan dan pendampingan lebih lanjut pada penguasaan konsep dasar.'
+          nilai: 0,
+          capaianKompetensi: 'Perlu bimbingan dan pendampingan lebih lanjut pada penguasaan konsep dasar.'
         });
       });
     });
