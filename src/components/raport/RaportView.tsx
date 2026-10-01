@@ -1053,6 +1053,7 @@ export const RaportView: React.FC = () => {
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           student={selectedStudent}
+          onSelectStudentId={id => setSelectedStudentId(id)}
         />
       )}
 

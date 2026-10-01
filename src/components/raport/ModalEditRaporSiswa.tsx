@@ -18,6 +18,8 @@ import {
   BookOpen,
   ArrowLeft,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
   MessageSquare,
   UserCheck,
@@ -30,12 +32,14 @@ interface ModalEditRaporSiswaProps {
   isOpen: boolean;
   onClose: () => void;
   student: Student;
+  onSelectStudentId?: (id: string) => void;
 }
 
 export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
   isOpen,
   onClose,
-  student
+  student,
+  onSelectStudentId
 }) => {
   const {
     schoolInfo,
@@ -48,12 +52,27 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
     calculateMidSemesterRankings,
     getStudentKokurikulerInfo,
     getStudentAttendanceStats,
-    students
+    students,
+    addToast
   } = useApp();
 
-  const reportData = getStudentReport(student.id);
-  const kokurInfo = getStudentKokurikulerInfo(student.id);
-  const autoAttendance = getStudentAttendanceStats(student.id);
+  // Active student state to allow switching inside modal
+  const [activeStudentId, setActiveStudentId] = useState<string>(student?.id || '');
+
+  useEffect(() => {
+    if (student?.id) {
+      setActiveStudentId(student.id);
+    }
+  }, [student?.id]);
+
+  const currentStudent = students.find(s => s.id === activeStudentId) || student;
+  const currentIndex = students.findIndex(s => s.id === currentStudent.id);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < students.length - 1;
+
+  const reportData = getStudentReport(currentStudent.id);
+  const kokurInfo = getStudentKokurikulerInfo(currentStudent.id);
+  const autoAttendance = getStudentAttendanceStats(currentStudent.id);
 
   const [activeTab, setActiveTab] = useState<'semester' | 'mid_semester'>('semester');
 
@@ -110,7 +129,7 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
   const [rankingMid, setRankingMid] = useState<string | number>(reportData.rankingMid ?? reportData.ranking ?? 1);
   const [catatanWaliKelasMid, setCatatanWaliKelasMid] = useState<string>(
     reportData.catatanWaliKelasMid ||
-    `"Ananda ${student.nama} menunjukkan kesungguhan dan keaktifan belajar yang sangat baik hingga tengah semester ini. Pertahankan ketekunan belajarmu dan terus kembangkan potensimu pada paruh semester kedua."`
+    `"Ananda ${currentStudent.nama} menunjukkan kesungguhan dan keaktifan belajar yang sangat baik hingga tengah semester ini. Pertahankan ketekunan belajarmu dan terus kembangkan potensimu pada paruh semester kedua."`
   );
   const defaultMidTanggal = schoolInfo.semester?.includes('2')
     ? `${schoolInfo.city}, 28 Maret 2027`
@@ -119,22 +138,22 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
     reportData.tempatTanggalRaporMid || defaultMidTanggal
   );
 
-  // Synchronize with student change
+  // Synchronize with active student change
   useEffect(() => {
-    if (student) {
-      const current = getStudentReport(student.id);
+    if (currentStudent && isOpen) {
+      const current = getStudentReport(currentStudent.id);
       setRanking(current.ranking ?? 1);
       setRankingMid(current.rankingMid ?? current.ranking ?? 1);
       setStatusKenaikan(current.statusKenaikan || 'Naik Kelas');
       setTargetKelas(current.targetKelas || 'V (Lima)');
       setKeteranganKenaikan(current.keteranganKenaikan || '');
       setCatatanWaliKelas(current.catatanWaliKelas || '');
-      const kInfo = getStudentKokurikulerInfo(student.id);
+      const kInfo = getStudentKokurikulerInfo(currentStudent.id);
       setDeskripsiKokurikuler(current.deskripsiKokurikuler || kInfo.deskripsi);
       setTanggapanOrangTua(current.tanggapanOrangTua || '');
       setCatatanWaliKelasMid(
         current.catatanWaliKelasMid ||
-        `"Ananda ${student.nama} menunjukkan kesungguhan dan keaktifan belajar yang sangat baik hingga tengah semester ini. Pertahankan ketekunan belajarmu dan terus kembangkan potensimu pada paruh semester kedua."`
+        `"Ananda ${currentStudent.nama} menunjukkan kesungguhan dan keaktifan belajar yang sangat baik hingga tengah semester ini. Pertahankan ketekunan belajarmu dan terus kembangkan potensimu pada paruh semester kedua."`
       );
       setTempatTanggalRapor(schoolInfo.tanggalRapor || current.tempatTanggalRapor || `${schoolInfo.city}, 20 Juni 2027`);
       setTempatTanggalRaporMid(schoolInfo.tanggalRaporMid || current.tempatTanggalRaporMid || defaultMidTanggal);
@@ -144,7 +163,7 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
       setParentSignatureChoice(current.parentSignatureChoice || 'auto');
       setParentCustomName(current.parentCustomName || '');
 
-      const att = getStudentAttendanceStats(student.id);
+      const att = getStudentAttendanceStats(currentStudent.id);
       setIsManualAbsensi(current.customAbsensi?.isManual || false);
       setAbsensiSakit(current.customAbsensi?.sakit ?? att.sakit);
       setAbsensiIzin(current.customAbsensi?.izin ?? att.izin);
@@ -155,27 +174,111 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
       setAbsensiIzinMid(current.customAbsensiMid?.izin ?? att.izin);
       setAbsensiAlpaMid(current.customAbsensiMid?.alpa ?? att.alpa);
     }
-  }, [student, isOpen]);
+  }, [currentStudent?.id, isOpen]);
 
-  if (!isOpen || !student) return null;
-
-  const sGrades = getAllGradesForStudent(student.id);
+  const sGrades = getAllGradesForStudent(currentStudent.id);
   const totalScore = sGrades.reduce((sum, g) => sum + g.nilaiAkhir, 0);
   const avgScore = sGrades.length > 0 ? +(totalScore / sGrades.length).toFixed(1) : 0;
 
-  const sMidGrades = getAllMidSemesterGradesForStudent(student.id);
+  const sMidGrades = getAllMidSemesterGradesForStudent(currentStudent.id);
   const totalScoreMid = sMidGrades.reduce((sum, g) => sum + g.nilaiAkhirMid, 0);
   const avgScoreMid = sMidGrades.length > 0 ? +(totalScoreMid / sMidGrades.length).toFixed(1) : 0;
+
+  // Save current student's form data
+  const saveCurrentStudentData = (targetId: string) => {
+    updateStudentReport(targetId, {
+      siswaId: targetId,
+      ranking,
+      rankingMid,
+      totalNilai: totalScore,
+      rataRataNilai: avgScore,
+      totalNilaiMid: totalScoreMid,
+      rataRataNilaiMid: avgScoreMid,
+      statusKenaikan,
+      targetKelas,
+      keteranganKenaikan,
+      catatanWaliKelas,
+      catatanWaliKelasMid,
+      deskripsiKokurikuler,
+      tanggapanOrangTua,
+      tempatTanggalRapor,
+      tempatTanggalRaporMid,
+      showRanking,
+      showMidDeskripsi,
+      showKenaikan,
+      parentSignatureChoice,
+      parentCustomName,
+      customAbsensi: isManualAbsensi
+        ? {
+            isManual: true,
+            sakit: Math.max(0, absensiSakit),
+            izin: Math.max(0, absensiIzin),
+            alpa: Math.max(0, absensiAlpa)
+          }
+        : { isManual: false },
+      customAbsensiMid: isManualAbsensiMid
+        ? {
+            isManual: true,
+            sakit: Math.max(0, absensiSakitMid),
+            izin: Math.max(0, absensiIzinMid),
+            alpa: Math.max(0, absensiAlpaMid)
+          }
+        : { isManual: false }
+    });
+  };
+
+  // Switch student handler (Sebelum / Selanjutnya / Select dropdown)
+  const handleNavigateStudent = (direction: 'prev' | 'next' | string) => {
+    // 1. Simpan perubahan siswa yang sedang aktif terlebih dahulu
+    saveCurrentStudentData(currentStudent.id);
+
+    let nextStudent: Student | undefined;
+    if (direction === 'prev') {
+      if (hasPrev) nextStudent = students[currentIndex - 1];
+    } else if (direction === 'next') {
+      if (hasNext) nextStudent = students[currentIndex + 1];
+    } else {
+      nextStudent = students.find(s => s.id === direction);
+    }
+
+    if (nextStudent) {
+      setActiveStudentId(nextStudent.id);
+      if (onSelectStudentId) {
+        onSelectStudentId(nextStudent.id);
+      }
+      addToast(
+        'success',
+        'Data Tersimpan',
+        `Perubahan rapor ${currentStudent.nama} tersimpan. Menampilkan ${nextStudent.nomorAbsen}. ${nextStudent.nama}.`
+      );
+    }
+  };
+
+  // Keyboard navigation Alt+ArrowLeft & Alt+ArrowRight
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (hasPrev) handleNavigateStudent('prev');
+      } else if (e.altKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (hasNext) handleNavigateStudent('next');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, hasPrev, hasNext, currentIndex, currentStudent.id, ranking, statusKenaikan, catatanWaliKelas]);
 
   // Auto calculate ranking for this specific student
   const handleAutoCalculateRanking = () => {
     if (activeTab === 'mid_semester') {
       const midRankings = calculateMidSemesterRankings();
-      const myRank = midRankings.find(r => r.siswaId === student.id);
+      const myRank = midRankings.find(r => r.siswaId === currentStudent.id);
       if (myRank) setRankingMid(myRank.rank);
     } else {
       const rankings = calculateStudentRankings();
-      const myRank = rankings.find(r => r.siswaId === student.id);
+      const myRank = rankings.find(r => r.siswaId === currentStudent.id);
       if (myRank) setRanking(myRank.rank);
     }
   };
@@ -219,23 +322,23 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
   const catatanPresets = [
     {
       label: 'Sangat Baik & Mandiri',
-      text: `"Ananda ${student.nama} menunjukkan kemandirian, nalar kritis, dan budi pekerti yang sangat membanggakan di semester ini. Pertahankan prestasi dan terus kembangkan bakat kepemimpinanmu."`
+      text: `"Ananda ${currentStudent.nama} menunjukkan kemandirian, nalar kritis, dan budi pekerti yang sangat membanggakan di semester ini. Pertahankan prestasi dan terus kembangkan bakat kepemimpinanmu."`
     },
     {
       label: 'Aktif & Konsisten',
-      text: `"Ananda ${student.nama} sangat aktif dalam diskusi kelas dan konsisten mencapai ketuntasan tujuan pembelajaran. Sikap disiplin dan kerja samanya patut menjadi teladan bagi rekan-rekannya."`
+      text: `"Ananda ${currentStudent.nama} sangat aktif dalam diskusi kelas dan konsisten mencapai ketuntasan tujuan pembelajaran. Sikap disiplin dan kerja samanya patut menjadi teladan bagi rekan-rekannya."`
     },
     {
       label: 'Peningkatan Literasi',
-      text: `"Ananda ${student.nama} mengalami perkembangan yang sangat baik dalam literasi dan kemampuan berpikir analitis. Terus rajin membaca dan eksplorasi hal-hal baru."`
+      text: `"Ananda ${currentStudent.nama} mengalami perkembangan yang sangat baik dalam literasi dan kemampuan berpikir analitis. Terus rajin membaca dan eksplorasi hal-hal baru."`
     },
     {
       label: 'Perlu Motivasi & Bimbingan',
-      text: `"Ananda ${student.nama} memiliki potensi besar, namun perlu lebih fokus dalam menyimak instruksi pembelajaran dan meningkatkan ketelitian saat pengerjaan tugas."`
+      text: `"Ananda ${currentStudent.nama} memiliki potensi besar, namun perlu lebih fokus dalam menyimak instruksi pembelajaran dan meningkatkan ketelitian saat pengerjaan tugas."`
     },
     {
       label: 'Bakat Seni & Olahraga',
-      text: `"Ananda ${student.nama} menunjukkan bakat istimewa dalam bidang seni dan olahraga serta berakhlak mulia. Diharapkan tetap menyeimbangkan ketekunan dalam bidang akademik."`
+      text: `"Ananda ${currentStudent.nama} menunjukkan bakat istimewa dalam bidang seni dan olahraga serta berakhlak mulia. Diharapkan tetap menyeimbangkan ketekunan dalam bidang akademik."`
     }
   ];
 
@@ -243,68 +346,34 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
   const catatanPresetsMid = [
     {
       label: 'Progres Tengah Semester Baik',
-      text: `"Ananda ${student.nama} menunjukkan semangat belajar yang sangat baik hingga pertengahan semester ini. Hasil asesmen sumatif tengah semester menunjukkan capaian yang memuaskan."`
+      text: `"Ananda ${currentStudent.nama} menunjukkan semangat belajar yang sangat baik hingga pertengahan semester ini. Hasil asesmen sumatif tengah semester menunjukkan capaian yang memuaskan."`
     },
     {
       label: 'Aktif dan Bertanggung Jawab',
-      text: `"Ananda ${student.nama} selalu antusias menyelesaikan tugas-tugas awal semester tepat waktu. Pertahankan ketekunan dan kerja kerasmu menjelang akhir semester nanti."`
+      text: `"Ananda ${currentStudent.nama} selalu antusias menyelesaikan tugas-tugas awal semester tepat waktu. Pertahankan ketekunan dan kerja kerasmu menjelang akhir semester nanti."`
     },
     {
       label: 'Perlu Penguatan Materi Dasar',
-      text: `"Ananda ${student.nama} perlu meningkatkan ketelitian dan mengulang materi dasar di rumah agar hasil pada paruh kedua semester semakin optimal."`
+      text: `"Ananda ${currentStudent.nama} perlu meningkatkan ketelitian dan mengulang materi dasar di rumah agar hasil pada paruh kedua semester semakin optimal."`
     },
     {
       label: 'Disiplin dan Santun',
-      text: `"Ananda ${student.nama} menunjukkan sikap sopan santun dan kedisiplinan yang tinggi dalam kegiatan pembelajaran harian tengah semester."`
+      text: `"Ananda ${currentStudent.nama} menunjukkan sikap sopan santun dan kedisiplinan yang tinggi dalam kegiatan pembelajaran harian tengah semester."`
     }
   ];
 
   const handleSave = () => {
-    updateStudentReport(student.id, {
-      siswaId: student.id,
-      ranking,
-      rankingMid,
-      totalNilai: totalScore,
-      rataRataNilai: avgScore,
-      totalNilaiMid: totalScoreMid,
-      rataRataNilaiMid: avgScoreMid,
-      statusKenaikan,
-      targetKelas,
-      keteranganKenaikan,
-      catatanWaliKelas,
-      catatanWaliKelasMid,
-      deskripsiKokurikuler,
-      tanggapanOrangTua,
-      tempatTanggalRapor,
-      tempatTanggalRaporMid,
-      showRanking,
-      showMidDeskripsi,
-      showKenaikan,
-      parentSignatureChoice,
-      parentCustomName,
-      customAbsensi: isManualAbsensi
-        ? {
-            isManual: true,
-            sakit: Math.max(0, absensiSakit),
-            izin: Math.max(0, absensiIzin),
-            alpa: Math.max(0, absensiAlpa)
-          }
-        : { isManual: false },
-      customAbsensiMid: isManualAbsensiMid
-        ? {
-            isManual: true,
-            sakit: Math.max(0, absensiSakitMid),
-            izin: Math.max(0, absensiIzinMid),
-            alpa: Math.max(0, absensiAlpaMid)
-          }
-        : { isManual: false }
-    });
+    saveCurrentStudentData(currentStudent.id);
+    addToast('success', 'Rapor Disimpan', `Data rapor ${currentStudent.nama} berhasil diperbarui.`);
     onClose();
   };
+
+  if (!isOpen || !currentStudent) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
+        
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-200 bg-linear-to-r from-blue-900 via-indigo-900 to-slate-900 px-6 py-4 text-white">
           <div className="flex items-center gap-3">
@@ -315,8 +384,8 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-200 bg-blue-800/60 px-2 py-0.5 rounded border border-blue-600/40">
                 Pengaturan Rapor Siswa
               </span>
-              <h3 className="text-base font-bold text-white mt-0.5 flex items-center gap-2">
-                Edit Data Rapor: {student.nama}
+              <h3 className="text-base font-bold text-white mt-0.5 flex items-center gap-2 truncate max-w-sm sm:max-w-md">
+                Edit Data Rapor: {currentStudent.nama}
               </h3>
             </div>
           </div>
@@ -325,6 +394,54 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
             className="rounded-xl p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
           >
             <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Student Navigator Bar (Tombol Sebelum dan Selanjutnya) */}
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 sm:px-6 py-2.5 gap-2">
+          {/* Tombol Siswa Sebelumnya */}
+          <button
+            type="button"
+            onClick={() => handleNavigateStudent('prev')}
+            disabled={!hasPrev}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-35 disabled:cursor-not-allowed transition-all active:scale-95 shadow-2xs cursor-pointer"
+            title={hasPrev ? `Pindah ke siswa sebelumnya: ${students[currentIndex - 1]?.nama} (Alt + ←)` : 'Sudah di siswa pertama'}
+          >
+            <ChevronLeft className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="hidden sm:inline">Sebelumnya</span>
+            <span className="sm:hidden">Sebelum</span>
+          </button>
+
+          {/* Quick Dropdown & Counter */}
+          <div className="flex items-center gap-2 max-w-[50%] sm:max-w-[62%]">
+            <select
+              value={currentStudent.id}
+              onChange={e => handleNavigateStudent(e.target.value)}
+              className="w-full truncate rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
+              title="Pilih langsung siswa yang ingin diedit datanya"
+            >
+              {students.map((s, idx) => (
+                <option key={s.id} value={s.id}>
+                  {s.nomorAbsen || idx + 1}. {s.nama} ({s.nisn || '-'})
+                </option>
+              ))}
+            </select>
+            <span className="shrink-0 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hidden md:inline whitespace-nowrap">
+              <strong>{currentIndex + 1}</strong>/{students.length}
+            </span>
+          </div>
+
+          {/* Tombol Siswa Selanjutnya */}
+          <button
+            type="button"
+            onClick={() => handleNavigateStudent('next')}
+            disabled={!hasNext}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-35 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all active:scale-95 shadow-2xs cursor-pointer"
+            title={hasNext ? `Pindah ke siswa selanjutnya: ${students[currentIndex + 1]?.nama} (Alt + →)` : 'Sudah di siswa terakhir'}
+          >
+            <span className="hidden sm:inline">Selanjutnya</span>
+            <span className="sm:hidden">Lanjut</span>
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
@@ -363,20 +480,20 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-bold text-slate-900 dark:text-white text-sm">
-                  {student.nomorAbsen}. {student.nama}
+                  {currentStudent.nomorAbsen}. {currentStudent.nama}
                 </p>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${
-                    AGAMA_DETAILS[student.agama]?.badgeBg || 'bg-slate-100'
-                  } ${AGAMA_DETAILS[student.agama]?.badgeText || 'text-slate-700'} ${
-                    AGAMA_DETAILS[student.agama]?.badgeBorder || 'border-slate-300'
+                    AGAMA_DETAILS[currentStudent.agama]?.badgeBg || 'bg-slate-100'
+                  } ${AGAMA_DETAILS[currentStudent.agama]?.badgeText || 'text-slate-700'} ${
+                    AGAMA_DETAILS[currentStudent.agama]?.badgeBorder || 'border-slate-300'
                   }`}
                 >
-                  Agama {student.agama}
+                  Agama {currentStudent.agama}
                 </span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                NISN: <span className="font-mono text-slate-700 dark:text-slate-300">{student.nisn}</span> • Kelas: {schoolInfo.className} ({schoolInfo.phase}) • Mapel Agama: <span className="font-semibold text-slate-800 dark:text-slate-200">{getReligionSubjectName(student.agama)}</span>
+                NISN: <span className="font-mono text-slate-700 dark:text-slate-300">{currentStudent.nisn}</span> • Kelas: {schoolInfo.className} ({schoolInfo.phase}) • Mapel Agama: <span className="font-semibold text-slate-800 dark:text-slate-200">{getReligionSubjectName(currentStudent.agama)}</span>
               </p>
             </div>
             <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -1325,18 +1442,46 @@ export const ModalEditRaporSiswa: React.FC<ModalEditRaporSiswaProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-6 py-3.5 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors"
-          >
-            Batal
-          </button>
+        <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Tutup
+            </button>
+
+            {/* Quick Navigation in Footer */}
+            <div className="inline-flex rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-0.5 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleNavigateStudent('prev')}
+                disabled={!hasPrev}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                title={hasPrev ? `Simpan & Beralih ke: ${students[currentIndex - 1]?.nama}` : 'Sudah di siswa pertama'}
+              >
+                <ChevronLeft className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="hidden sm:inline">Sebelum</span>
+              </button>
+              <div className="w-px bg-slate-200 dark:bg-slate-700 my-1" />
+              <button
+                type="button"
+                onClick={() => handleNavigateStudent('next')}
+                disabled={!hasNext}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                title={hasNext ? `Simpan & Beralih ke: ${students[currentIndex + 1]?.nama}` : 'Sudah di siswa terakhir'}
+              >
+                <span className="hidden sm:inline">Selanjutnya</span>
+                <ChevronRight className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              </button>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 active:scale-95 transition-all"
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 sm:px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-700 active:scale-95 transition-all cursor-pointer"
           >
             <Save className="h-4 w-4" />
             <span>Simpan Perubahan Rapor</span>
