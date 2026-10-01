@@ -167,7 +167,12 @@ export const DataSiswaView: React.FC = () => {
     status: 'Aktif',
     nomorAbsen: students.length + 1,
     kelas: '4A',
-    catatanKhusus: ''
+    catatanKhusus: '',
+    statusDalamKeluarga: 'Anak Kandung',
+    anakKe: 1,
+    sekolahAsal: '',
+    diterimaDiKelas: '1',
+    diterimaTanggal: '2024-07-15'
   });
 
   // Filter & Sorting Logic
@@ -190,6 +195,7 @@ export const DataSiswaView: React.FC = () => {
     });
 
   const handleOpenAdd = () => {
+    const rawClassNumber = schoolInfo.className ? schoolInfo.className.replace(/[^0-9]/g, '') : '1';
     setFormData({
       nisn: '012384' + Math.floor(1000 + Math.random() * 9000),
       nis: '40' + (students.length + 21),
@@ -206,8 +212,13 @@ export const DataSiswaView: React.FC = () => {
       fotoUrl: 'https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=150&auto=format&fit=crop&q=80',
       status: 'Aktif',
       nomorAbsen: students.length + 1,
-      kelas: '4A',
-      catatanKhusus: ''
+      kelas: schoolInfo.className || '4A',
+      catatanKhusus: '',
+      statusDalamKeluarga: 'Anak Kandung',
+      anakKe: 1,
+      sekolahAsal: '',
+      diterimaDiKelas: rawClassNumber || '1',
+      diterimaTanggal: '2024-07-15'
     });
     setIsAddModalOpen(true);
   };
@@ -231,7 +242,12 @@ export const DataSiswaView: React.FC = () => {
       status: student.status,
       nomorAbsen: student.nomorAbsen,
       kelas: student.kelas,
-      catatanKhusus: student.catatanKhusus || ''
+      catatanKhusus: student.catatanKhusus || '',
+      statusDalamKeluarga: student.statusDalamKeluarga || 'Anak Kandung',
+      anakKe: student.anakKe !== undefined ? student.anakKe : 1,
+      sekolahAsal: student.sekolahAsal || '',
+      diterimaDiKelas: student.diterimaDiKelas || student.kelas || '1',
+      diterimaTanggal: student.diterimaTanggal || '2024-07-15'
     });
   };
 
@@ -853,6 +869,112 @@ export const DataSiswaView: React.FC = () => {
               </select>
             </div>
 
+            {/* Sub-header: Riwayat Masuk Sekolah & Data Keluarga */}
+            <div className="sm:col-span-2 pt-3 pb-1 border-t border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                <GraduationCap className="h-4 w-4" />
+                <span>Riwayat Masuk Sekolah & Status Keluarga</span>
+              </h4>
+            </div>
+
+            {/* Status dalam keluarga */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Status dalam Keluarga
+              </label>
+              <input
+                type="text"
+                list="list-status-keluarga"
+                value={formData.statusDalamKeluarga || ''}
+                onChange={e => setFormData({ ...formData, statusDalamKeluarga: e.target.value })}
+                placeholder="Contoh: Anak Kandung / Anak Angkat"
+                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <datalist id="list-status-keluarga">
+                <option value="Anak Kandung" />
+                <option value="Anak Angkat" />
+                <option value="Anak Tiri" />
+                <option value="Anak Asuh" />
+              </datalist>
+            </div>
+
+            {/* Anak Ke */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Anak Ke
+              </label>
+              <input
+                type="text"
+                value={formData.anakKe !== undefined ? formData.anakKe : ''}
+                onChange={e => setFormData({ ...formData, anakKe: e.target.value })}
+                placeholder="Contoh: 1 atau 1 (Satu)"
+                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+
+            {/* Sekolah Asal (TK/PAUD) */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Sekolah Asal (TK/PAUD)
+              </label>
+              <input
+                type="text"
+                value={formData.sekolahAsal || ''}
+                onChange={e => setFormData({ ...formData, sekolahAsal: e.target.value })}
+                placeholder="Contoh: TK Pembina / TK Pertiwi / PAUD Bintang Terpadu"
+                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+
+            {/* Diterima di Sekolah Ini */}
+            <div className="sm:col-span-2 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 p-3.5 border border-blue-100 dark:border-blue-900/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Diterima di Sekolah Ini:</span>
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Data masuk peserta didik ke sekolah
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* a. Di kelas */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    a. Di Kelas
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.diterimaDiKelas || ''}
+                    onChange={e => setFormData({ ...formData, diterimaDiKelas: e.target.value })}
+                    placeholder="Contoh: 1 (Satu) atau 4A"
+                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
+
+                {/* b. Pada Tanggal */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    b. Pada Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.diterimaTanggal || ''}
+                    onChange={e => setFormData({ ...formData, diterimaTanggal: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-header: Data Orang Tua */}
+            <div className="sm:col-span-2 pt-3 pb-1 border-t border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span>Data Orang Tua & Wali Murid</span>
+              </h4>
+            </div>
+
             {/* Nama Ayah */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -1042,6 +1164,18 @@ export const DataSiswaView: React.FC = () => {
                   <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                     <span className="text-slate-400">NIS Lokal</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingStudent.nis}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-400">Status dlm Keluarga</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingStudent.statusDalamKeluarga || 'Anak Kandung'} (Anak Ke-{viewingStudent.anakKe !== undefined ? viewingStudent.anakKe : 1})</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-400">Sekolah Asal (TK/PAUD)</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">{viewingStudent.sekolahAsal || '-'}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-400">Diterima di Sekolah</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">Kelas {viewingStudent.diterimaDiKelas || viewingStudent.kelas || '-'} ({viewingStudent.diterimaTanggal || '-'})</span>
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-slate-400">Catatan Karakter</span>

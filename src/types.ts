@@ -93,6 +93,11 @@ export interface Student {
   nomorAbsen: number;
   kelas: string;
   catatanKhusus?: string;
+  statusDalamKeluarga?: string;
+  anakKe?: number | string;
+  sekolahAsal?: string;
+  diterimaDiKelas?: string;
+  diterimaTanggal?: string;
 }
 
 export type AttendanceStatus = 'Hadir' | 'Sakit' | 'Izin' | 'Alpa';

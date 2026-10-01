@@ -31,6 +31,11 @@ export function generateStudentTemplate(existingSubjects: Subject[] = []): XLSX.
     'Tempat Lahir',
     'Tanggal Lahir (YYYY-MM-DD)',
     'Agama',
+    'Status dalam Keluarga',
+    'Anak Ke',
+    'Sekolah Asal (TK/PAUD)',
+    'Diterima di Kelas',
+    'Diterima pada Tanggal',
     'Alamat Lengkap',
     'Nama Ayah',
     'Nama Ibu',
@@ -51,6 +56,11 @@ export function generateStudentTemplate(existingSubjects: Subject[] = []): XLSX.
       'Jakarta',
       '2015-05-12',
       'Islam',
+      'Anak Kandung',
+      '1',
+      'TK Dharma Wanita',
+      '1',
+      '2024-07-15',
       'Jl. Merdeka No. 10 RT 02/05',
       'Bambang Sutrisno',
       'Siti Aminah',
@@ -69,6 +79,11 @@ export function generateStudentTemplate(existingSubjects: Subject[] = []): XLSX.
       'Bandung',
       '2015-08-20',
       'Islam',
+      'Anak Kandung',
+      '2',
+      'PAUD Kasih Ibu',
+      '1',
+      '2024-07-15',
       'Jl. Mawar Indah Blok B3',
       'Rahmat Hidayat',
       'Nurul Fatimah',
@@ -87,6 +102,11 @@ export function generateStudentTemplate(existingSubjects: Subject[] = []): XLSX.
       'Surabaya',
       '2015-02-14',
       'Islam',
+      'Anak Kandung',
+      '1',
+      'TK Pertiwi',
+      '1',
+      '2024-07-15',
       'Jl. Kenanga No. 45',
       'Supriyadi',
       'Endang Lestari',
@@ -997,6 +1017,11 @@ export function parseStudentsFromSheet(ws: XLSX.WorkSheet, defaultClass: string 
   const colTanggalLahir = findCol(/tanggal\s*lahir|tgl\s*lahir|tgl\.?\s*lahir|birth/i, /tempat/i);
   const colTtl = findCol(/tempat.*t(an)?g(ga)?l.*lahir|ttl/i);
   const colAgama = findCol(/agama/i);
+  const colStatusKeluarga = findCol(/status.*(keluarga|dlm)/i);
+  const colAnakKe = findCol(/anak\s*ke/i);
+  const colSekolahAsal = findCol(/sekolah\s*asal|asal\s*sekolah|tk|paud/i);
+  const colDiterimaKelas = findCol(/diterima.*(kelas|rombel)/i);
+  const colDiterimaTanggal = findCol(/diterima.*(tanggal|tgl)/i);
   const colAlamat = findCol(/alamat/i, /ortu|wali/i);
   const colAyah = findCol(/ayah|bapak/i);
   const colIbu = findCol(/ibu/i);
@@ -1106,6 +1131,13 @@ export function parseStudentsFromSheet(ws: XLSX.WorkSheet, defaultClass: string 
 
     const kelas = String(colKelas >= 0 ? getVal(colKelas) : defaultClass).trim() || defaultClass;
     const catatanKhusus = String(colCatatan >= 0 ? getVal(colCatatan) : '').trim();
+    const statusDalamKeluarga = String(colStatusKeluarga >= 0 ? getVal(colStatusKeluarga) : 'Anak Kandung').trim() || 'Anak Kandung';
+    const rawAnakKe = colAnakKe >= 0 ? getVal(colAnakKe) : 1;
+    const anakKe = rawAnakKe !== '' && rawAnakKe !== undefined ? rawAnakKe : 1;
+    const sekolahAsal = String(colSekolahAsal >= 0 ? getVal(colSekolahAsal) : '').trim();
+    const diterimaDiKelas = String(colDiterimaKelas >= 0 ? getVal(colDiterimaKelas) : kelas).trim() || kelas;
+    const rawDiterimaTgl = colDiterimaTanggal >= 0 ? getVal(colDiterimaTanggal) : '';
+    const diterimaTanggal = rawDiterimaTgl ? formatExcelDate(rawDiterimaTgl) : '2024-07-15';
 
     // Generate safe Firestore-compliant student ID
     const baseId = nisn ? `sis_${nisn}` : `sis_${Date.now().toString().slice(-6)}_${data.length + 1}`;
@@ -1126,6 +1158,11 @@ export function parseStudentsFromSheet(ws: XLSX.WorkSheet, defaultClass: string 
       tempatLahir,
       tanggalLahir,
       agama,
+      statusDalamKeluarga,
+      anakKe,
+      sekolahAsal,
+      diterimaDiKelas,
+      diterimaTanggal,
       alamat: alamat || 'Jl. Pendidikan No. 1',
       namaAyah: namaAyah || '-',
       namaIbu: namaIbu || '-',

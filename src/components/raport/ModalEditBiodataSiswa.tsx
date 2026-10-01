@@ -30,7 +30,12 @@ export const ModalEditBiodataSiswa: React.FC<ModalEditBiodataSiswaProps> = ({
     pekerjaanOrtu: student.pekerjaanOrtu,
     noHpOrtu: student.noHpOrtu,
     kelas: student.kelas,
-    nomorAbsen: student.nomorAbsen
+    nomorAbsen: student.nomorAbsen,
+    statusDalamKeluarga: student.statusDalamKeluarga || 'Anak Kandung',
+    anakKe: student.anakKe !== undefined ? student.anakKe : 1,
+    sekolahAsal: student.sekolahAsal || '',
+    diterimaDiKelas: student.diterimaDiKelas || student.kelas || '1',
+    diterimaTanggal: student.diterimaTanggal || '2024-07-15'
   });
 
   useEffect(() => {
@@ -49,7 +54,12 @@ export const ModalEditBiodataSiswa: React.FC<ModalEditBiodataSiswaProps> = ({
         pekerjaanOrtu: student.pekerjaanOrtu,
         noHpOrtu: student.noHpOrtu,
         kelas: student.kelas,
-        nomorAbsen: student.nomorAbsen
+        nomorAbsen: student.nomorAbsen,
+        statusDalamKeluarga: student.statusDalamKeluarga || 'Anak Kandung',
+        anakKe: student.anakKe !== undefined ? student.anakKe : 1,
+        sekolahAsal: student.sekolahAsal || '',
+        diterimaDiKelas: student.diterimaDiKelas || student.kelas || '1',
+        diterimaTanggal: student.diterimaTanggal || '2024-07-15'
       });
     }
   }, [student]);
@@ -202,6 +212,77 @@ export const ModalEditBiodataSiswa: React.FC<ModalEditBiodataSiswaProps> = ({
                   <option value="Buddha">Buddha</option>
                   <option value="Konghucu">Konghucu</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Status dalam Keluarga
+                </label>
+                <input
+                  type="text"
+                  value={formData.statusDalamKeluarga || ''}
+                  onChange={e => handleChange('statusDalamKeluarga', e.target.value)}
+                  placeholder="Contoh: Anak Kandung / Anak Angkat"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Anak Ke-
+                </label>
+                <input
+                  type="text"
+                  value={formData.anakKe !== undefined ? formData.anakKe : ''}
+                  onChange={e => handleChange('anakKe', e.target.value)}
+                  placeholder="Contoh: 1 atau 1 (Satu)"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Sekolah Asal (TK / PAUD)
+                </label>
+                <input
+                  type="text"
+                  value={formData.sekolahAsal || ''}
+                  onChange={e => handleChange('sekolahAsal', e.target.value)}
+                  placeholder="Contoh: TK Pertiwi / PAUD Kasih Bunda"
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Diterima di Sekolah Ini */}
+              <div className="sm:col-span-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 border border-slate-200 dark:border-slate-700 space-y-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Diterima di Sekolah ini:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      a. Di Kelas
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.diterimaDiKelas || ''}
+                      onChange={e => handleChange('diterimaDiKelas', e.target.value)}
+                      placeholder="Contoh: 1 (Satu) atau 4A"
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      b. Pada Tanggal
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.diterimaTanggal || ''}
+                      onChange={e => handleChange('diterimaTanggal', e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -398,7 +398,7 @@ export const StudentCoverAndBiodataSheet: React.FC<StudentCoverAndBiodataSheetPr
                   <td className="py-1 font-semibold text-slate-900 align-top border-none border-0">7.</td>
                   <td className="py-1 font-semibold text-slate-900 align-top border-none border-0">Status dalam Keluarga</td>
                   <td className="py-1 text-center font-semibold text-slate-900 align-top border-none border-0">:</td>
-                  <td className="py-1 text-slate-900 align-top border-none border-0">Anak Kandung</td>
+                  <td className="py-1 text-slate-900 align-top border-none border-0">{student.statusDalamKeluarga || 'Anak Kandung'}</td>
                 </tr>
 
                 {/* 8. Anak Ke- */}
@@ -406,7 +406,7 @@ export const StudentCoverAndBiodataSheet: React.FC<StudentCoverAndBiodataSheetPr
                   <td className="py-1 font-semibold text-slate-900 align-top border-none border-0">8.</td>
                   <td className="py-1 font-semibold text-slate-900 align-top border-none border-0">Anak Ke-</td>
                   <td className="py-1 text-center font-semibold text-slate-900 align-top border-none border-0">:</td>
-                  <td className="py-1 text-slate-900 align-top border-none border-0">1 (Satu)</td>
+                  <td className="py-1 text-slate-900 align-top border-none border-0">{student.anakKe !== undefined && student.anakKe !== '' ? `${student.anakKe}` : '1 (Satu)'}</td>
                 </tr>
 
                 {/* 9. Alamat Siswa */}
@@ -430,7 +430,7 @@ export const StudentCoverAndBiodataSheet: React.FC<StudentCoverAndBiodataSheetPr
                   <td className="py-1 font-semibold text-slate-900 align-top border-none border-0">11.</td>
                   <td className="py-1 font-semibold text-slate-900 align-top border-none border-0">Sekolah Asal (TK / PAUD)</td>
                   <td className="py-1 text-center font-semibold text-slate-900 align-top border-none border-0">:</td>
-                  <td className="py-1 text-slate-900 align-top border-none border-0">TK Pertiwi / PAUD Bintang</td>
+                  <td className="py-1 text-slate-900 align-top border-none border-0">{student.sekolahAsal || '-'}</td>
                 </tr>
 
                 {/* 12. Diterima di Sekolah ini */}
@@ -444,13 +444,13 @@ export const StudentCoverAndBiodataSheet: React.FC<StudentCoverAndBiodataSheetPr
                   <td className="py-0.5 border-none border-0"></td>
                   <td className="py-0.5 pl-4 text-slate-800 border-none border-0">a. Di kelas</td>
                   <td className="py-0.5 text-center font-semibold text-slate-800 border-none border-0">:</td>
-                  <td className="py-0.5 text-slate-900 font-semibold border-none border-0">{student.kelas || schoolInfo.className}</td>
+                  <td className="py-0.5 text-slate-900 font-semibold border-none border-0">{student.diterimaDiKelas || student.kelas || schoolInfo.className}</td>
                 </tr>
                 <tr className="border-none border-0">
                   <td className="py-0.5 border-none border-0"></td>
                   <td className="py-0.5 pl-4 text-slate-800 border-none border-0">b. Pada tanggal</td>
                   <td className="py-0.5 text-center font-semibold text-slate-800 border-none border-0">:</td>
-                  <td className="py-0.5 text-slate-900 font-semibold border-none border-0">{admissionDate}</td>
+                  <td className="py-0.5 text-slate-900 font-semibold border-none border-0">{student.diterimaTanggal ? formatIndonesianDate(student.diterimaTanggal) : admissionDate}</td>
                 </tr>
 
                 {/* 13. Data Orang Tua */}
